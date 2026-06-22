@@ -435,7 +435,7 @@
                <center>
                 <AnchorPane minHeight="0.0" minWidth="0.0" prefHeight="180.0" prefWidth="200.0">
                      <children>
-                        <ImageView fx:id="imgEvent" fitHeight="1020.0" fitWidth="1920.0" pickOnBounds="true">
+                        <ImageView fx:id="imgEvent" fitHeight="1000.0" fitWidth="1920.0" pickOnBounds="true">
                            <image>
                               <Image url="@../images/broken.jpg" />
                            </image>

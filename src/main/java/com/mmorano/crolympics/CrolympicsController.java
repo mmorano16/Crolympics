@@ -38,9 +38,7 @@ public class CrolympicsController{
     @FXML private Label lblScore1, lblScore2, lblScore3, lblScore4, lblScore5, lblScore6, lblScore7, lblScore8, lblScore9, lblScore10, lblScore11, lblScore12, lblScore13, lblScore14, lblScore15;
     @FXML private ImageView imgGold, imgSilver, imgBronze, imgEvent;
     @FXML private Label lblPlace4, lblPlace5, lblPlace6, lblPlace7, lblPlace8, lblPlace9, lblPlace10, lblPlace11, lblPlace12, lblPlace13, lblPlace14, lblPlace15;
-    @FXML private GridPane gridTemp;
     @FXML private VBox vboxSchedule, vboxFunc;
-    @FXML private AnchorPane paneScoreboard;
     @FXML private Tab tabScoreboard, tabSchedule, tabCurrentEvent;
     @FXML private TabPane tabPane;
     @FXML private BorderPane borderPane;
@@ -48,8 +46,7 @@ public class CrolympicsController{
     private ObservableList<Player> players;
     private ObservableList<Label> playerLabels, scoreLabels, placeLabels;
     private ObservableList<ImageView> placeImages;
-    private int fontSize = 32, fontSize2 = 24;
-    private File playersFile, eventsFile;
+    private final int fontSize = 32, fontSize2 = 24;
     private CrolympicsSave save = new CrolympicsSave();
     private SaveData saveData = new SaveData();
 
@@ -67,7 +64,7 @@ public class CrolympicsController{
             while(sc.hasNextLine()){
                 players.add(new Player(sc.nextLine()));
             }
-        }catch (Exception e){}
+        }catch (Exception ignored){}
         tabScoreboard.selectedProperty().addListener((observable, oldValue, newValue) -> {
             if (newValue)
                 setLeaderboard();
@@ -91,7 +88,7 @@ public class CrolympicsController{
         players.sort(Comparator.comparing(Player::getPoints).reversed());
         for(int i = 0; i < playerLabels.size() && i < players.size(); i++){
             playerLabels.get(i).setText(players.get(i).getName());
-            scoreLabels.get(i).setText(String.valueOf(players.get(i).getPoints()) + " pts");
+            scoreLabels.get(i).setText(players.get(i).getPoints() + " pts");
             //If 2 players are tied, do not show place number/image for second+ player to indicate they are tied for above place
             if(i > 0 && players.get(i).getPoints() == players.get(i - 1).getPoints()){
                 if(i < 3){
@@ -155,7 +152,7 @@ public class CrolympicsController{
 
                     int points = Integer.parseInt(elements[count + 2]);
                     EventPlace eventPlace = new EventPlace();
-                    if(elements[count + 1].toLowerCase().equals("many")) {
+                    if(elements[count + 1].equalsIgnoreCase("many")) {
                         //checkboxes of all players
                         eventPlace.setPlaceName("checkboxes");
                         sportEvent.getPlaces().add(eventPlace);
@@ -212,7 +209,7 @@ public class CrolympicsController{
                 saveData.getEvents().add(sportEvent);
                 vboxSchedule.getChildren().add(anchorPane);
             }
-        }catch (Exception e){}
+        }catch (Exception ignored){}
     }
 
     private void setTicker(){
@@ -290,7 +287,7 @@ public class CrolympicsController{
         addPointsLabel.setPrefWidth(Region.USE_COMPUTED_SIZE);
         addPointsLabel.setFont(new Font(fontSize));
 
-        SearchableComboBox addPointsComboBox = getPlayerComboBox(0, new EventPlace());
+        SearchableComboBox<Player> addPointsComboBox = getPlayerComboBox(0, new EventPlace());
         addPointsComboBox.setLayoutX(177);
         addPointsComboBox.setLayoutY(5);
 
@@ -306,7 +303,7 @@ public class CrolympicsController{
         addPointsButton.setLayoutY(5);
         addPointsButton.setFont(new Font(fontSize2));
         addPointsButton.setOnAction(Event -> {
-            Player player = ((Player) addPointsComboBox.getValue());
+            Player player = addPointsComboBox.getValue();
             player.setPoints(player.getPoints() + Integer.parseInt(addPointsInput.getText()));
             addPointsInput.setText("");
             addPointsComboBox.getSelectionModel().clearSelection();
@@ -329,7 +326,7 @@ public class CrolympicsController{
         subtractPointsLabel.setPrefWidth(Region.USE_COMPUTED_SIZE);
         subtractPointsLabel.setFont(new Font(fontSize));
 
-        SearchableComboBox subtractPointsComboBox = getPlayerComboBox(0, new EventPlace());
+        SearchableComboBox<Player> subtractPointsComboBox = getPlayerComboBox(0, new EventPlace());
         subtractPointsComboBox.setLayoutX(244);
         subtractPointsComboBox.setLayoutY(5);
 
@@ -345,7 +342,7 @@ public class CrolympicsController{
         subtractPointsButton.setLayoutY(5);
         subtractPointsButton.setFont(new Font(fontSize2));
         subtractPointsButton.setOnAction(Event -> {
-            Player player = ((Player) subtractPointsComboBox.getValue());
+            Player player = subtractPointsComboBox.getValue();
             player.setPoints(player.getPoints() - Integer.parseInt(subtractPointsInput.getText()));
             subtractPointsInput.setText("");
             subtractPointsComboBox.getSelectionModel().clearSelection();
@@ -390,11 +387,12 @@ public class CrolympicsController{
     private SearchableComboBox<Player> getPlayerComboBox(int points, EventPlace eventPlace) {
         SearchableComboBox<Player> comboBox = new SearchableComboBox<>(players);
         // Define the StringConverter to show the Name field
-        comboBox.setConverter(new StringConverter<Player>() {
+        comboBox.setConverter(new StringConverter<>() {
             @Override
             public String toString(Player player) {
                 return (player == null) ? "" : player.getName();
             }
+
             @Override
             public Player fromString(String string) {
                 // Not needed unless the ComboBox is editable
@@ -428,72 +426,30 @@ public class CrolympicsController{
     private void onEventDoubleClicked(int round){
         FileInputStream stream = null;
         try {
-            switch (round) {
-                case 1:
-                    stream = new FileInputStream(getFile("EventImages/round1.png"));
-                    break;
-                case 2:
-                    stream = new FileInputStream(getFile("EventImages/round2.png"));
-                    break;
-                case 3:
-                    stream = new FileInputStream(getFile("EventImages/round3.png"));
-                    break;
-                case 4:
-                    stream = new FileInputStream(getFile("EventImages/round4.png"));
-                    break;
-                case 5:
-                    stream = new FileInputStream(getFile("EventImages/round5.png"));
-                    break;
-                case 6:
-                    stream = new FileInputStream(getFile("EventImages/round6.png"));
-                    break;
-                case 7:
-                    stream = new FileInputStream(getFile("EventImages/round7.png"));
-                    break;
-                case 8:
-                    stream = new FileInputStream(getFile("EventImages/round8.png"));
-                    break;
-                case 9:
-                    stream = new FileInputStream(getFile("EventImages/round9.png"));
-                    break;
-                case 10:
-                    stream = new FileInputStream(getFile("EventImages/round10.png"));
-                    break;
-                case 11:
-                    stream = new FileInputStream(getFile("EventImages/round11.png"));
-                    break;
-                case 12:
-                    stream = new FileInputStream(getFile("EventImages/round12.png"));
-                    break;
-                case 13:
-                    stream = new FileInputStream(getFile("EventImages/round13.png"));
-                    break;
-                case 14:
-                    stream = new FileInputStream(getFile("EventImages/round14.png"));
-                    break;
-                case 15:
-                    stream = new FileInputStream(getFile("EventImages/round15.png"));
-                    break;
-                case 16:
-                    stream = new FileInputStream(getFile("EventImages/round16.png"));
-                    break;
-                case 17:
-                    stream = new FileInputStream(getFile("EventImages/round17.png"));
-                    break;
-                case 18:
-                    stream = new FileInputStream(getFile("EventImages/round18.png"));
-                    break;
-                case 19:
-                    stream = new FileInputStream(getFile("EventImages/round19.png"));
-                    break;
-                case 20:
-                    stream = new FileInputStream(getFile("EventImages/round20.png"));
-                    break;
-                default:
-                    stream = new FileInputStream("@../images/broken.jpg");
-                    break;
-            }
-        }catch (Exception e){}
+            stream = switch (round) {
+                case 1 -> new FileInputStream(getFile("EventImages/round1.png"));
+                case 2 -> new FileInputStream(getFile("EventImages/round2.png"));
+                case 3 -> new FileInputStream(getFile("EventImages/round3.png"));
+                case 4 -> new FileInputStream(getFile("EventImages/round4.png"));
+                case 5 -> new FileInputStream(getFile("EventImages/round5.png"));
+                case 6 -> new FileInputStream(getFile("EventImages/round6.png"));
+                case 7 -> new FileInputStream(getFile("EventImages/round7.png"));
+                case 8 -> new FileInputStream(getFile("EventImages/round8.png"));
+                case 9 -> new FileInputStream(getFile("EventImages/round9.png"));
+                case 10 -> new FileInputStream(getFile("EventImages/round10.png"));
+                case 11 -> new FileInputStream(getFile("EventImages/round11.png"));
+                case 12 -> new FileInputStream(getFile("EventImages/round12.png"));
+                case 13 -> new FileInputStream(getFile("EventImages/round13.png"));
+                case 14 -> new FileInputStream(getFile("EventImages/round14.png"));
+                case 15 -> new FileInputStream(getFile("EventImages/round15.png"));
+                case 16 -> new FileInputStream(getFile("EventImages/round16.png"));
+                case 17 -> new FileInputStream(getFile("EventImages/round17.png"));
+                case 18 -> new FileInputStream(getFile("EventImages/round18.png"));
+                case 19 -> new FileInputStream(getFile("EventImages/round19.png"));
+                case 20 -> new FileInputStream(getFile("EventImages/round20.png"));
+                default -> new FileInputStream("@../images/broken.jpg");
+            };
+        }catch (Exception ignored){}
         imgEvent.setImage(new Image(stream));
         tabPane.getSelectionModel().select(tabCurrentEvent);
     }
@@ -512,7 +468,6 @@ public class CrolympicsController{
                 node.getBoundsInLocal().getWidth() + ")");
         System.out.println(indent + "  Visible: " + node.isVisible() + " | Opacity: " + node.getOpacity());
         System.out.println(indent + "  Style Classes: " + node.getStyleClass());
-        System.out.println(indent + "  Value: " + node.toString());
 
         // Print text-specific properties if the node is a Label, Button, etc.
         if (node instanceof Labeled) {
