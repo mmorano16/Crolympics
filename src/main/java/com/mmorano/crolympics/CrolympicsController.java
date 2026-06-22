@@ -1,0 +1,529 @@
+package com.mmorano.crolympics;
+
+import com.mmorano.crolympics.Save.CrolympicsSave;
+import com.mmorano.crolympics.Save.Event;
+import com.mmorano.crolympics.Save.EventPlace;
+import com.mmorano.crolympics.Save.SaveData;
+import javafx.animation.Animation;
+import javafx.animation.Interpolator;
+import javafx.animation.TranslateTransition;
+import javafx.collections.FXCollections;
+import javafx.collections.ObservableList;
+import javafx.fxml.FXML;
+import javafx.geometry.Insets;
+import javafx.geometry.Rectangle2D;
+import javafx.scene.Node;
+import javafx.scene.Parent;
+import javafx.scene.control.*;
+import javafx.scene.image.Image;
+import javafx.scene.image.ImageView;
+import javafx.scene.input.MouseButton;
+import javafx.scene.layout.*;
+import javafx.scene.paint.Color;
+import javafx.scene.shape.Rectangle;
+import javafx.scene.text.Font;
+import javafx.scene.text.Text;
+import javafx.stage.Screen;
+import javafx.util.Duration;
+import javafx.util.StringConverter;
+import org.controlsfx.control.SearchableComboBox;
+
+import java.io.File;
+import java.io.FileInputStream;
+import java.nio.file.Path;
+import java.util.*;
+
+public class CrolympicsController{
+    @FXML private Label lblPlayer1, lblPlayer2, lblPlayer3, lblPlayer4, lblPlayer5, lblPlayer6, lblPlayer7, lblPlayer8, lblPlayer9, lblPlayer10, lblPlayer11, lblPlayer12, lblPlayer13, lblPlayer14, lblPlayer15;
+    @FXML private Label lblScore1, lblScore2, lblScore3, lblScore4, lblScore5, lblScore6, lblScore7, lblScore8, lblScore9, lblScore10, lblScore11, lblScore12, lblScore13, lblScore14, lblScore15;
+    @FXML private ImageView imgGold, imgSilver, imgBronze, imgEvent;
+    @FXML private Label lblPlace4, lblPlace5, lblPlace6, lblPlace7, lblPlace8, lblPlace9, lblPlace10, lblPlace11, lblPlace12, lblPlace13, lblPlace14, lblPlace15;
+    @FXML private GridPane gridTemp;
+    @FXML private VBox vboxSchedule, vboxFunc;
+    @FXML private AnchorPane paneScoreboard;
+    @FXML private Tab tabScoreboard, tabSchedule, tabCurrentEvent;
+    @FXML private TabPane tabPane;
+    @FXML private BorderPane borderPane;
+    private Scanner sc;
+    private ObservableList<Player> players;
+    private ObservableList<Label> playerLabels, scoreLabels, placeLabels;
+    private ObservableList<ImageView> placeImages;
+    private int fontSize = 32, fontSize2 = 24;
+    private File playersFile, eventsFile;
+    private CrolympicsSave save = new CrolympicsSave();
+    private SaveData saveData = new SaveData();
+
+    public void initialize(){
+        players = FXCollections.observableArrayList();
+        playerLabels = FXCollections.observableArrayList(List.of(lblPlayer1, lblPlayer2, lblPlayer3, lblPlayer4, lblPlayer5, lblPlayer6, lblPlayer7, lblPlayer8, lblPlayer9, lblPlayer10, lblPlayer11, lblPlayer12, lblPlayer13, lblPlayer14, lblPlayer15));
+        scoreLabels = FXCollections.observableArrayList(List.of(lblScore1, lblScore2, lblScore3, lblScore4, lblScore5, lblScore6, lblScore7, lblScore8, lblScore9, lblScore10, lblScore11, lblScore12, lblScore13, lblScore14, lblScore15));
+        placeImages = FXCollections.observableArrayList(List.of(imgGold, imgSilver, imgBronze));
+        placeLabels = FXCollections.observableArrayList(List.of(lblPlace4, lblPlace5, lblPlace6, lblPlace7, lblPlace8, lblPlace9, lblPlace10, lblPlace11, lblPlace12, lblPlace13, lblPlace14, lblPlace15));
+
+        saveData = save.TryLoad();
+
+        try{
+            sc = new Scanner(getFile("players.txt"));
+            while(sc.hasNextLine()){
+                players.add(new Player(sc.nextLine()));
+            }
+        }catch (Exception e){}
+        tabScoreboard.selectedProperty().addListener((observable, oldValue, newValue) -> {
+            if (newValue)
+                setLeaderboard();
+        });
+        tabCurrentEvent.selectedProperty().addListener((observable, oldValue, newValue) -> {
+            if (newValue)
+                setTicker();
+        });
+        tabSchedule.selectedProperty().addListener((observable, oldValue, newValue) -> {
+            if (oldValue)
+                save.TrySave(saveData);
+        });
+        players.sort(Comparator.comparing(Player::getPoints).thenComparing(Player::getName));
+        setLeaderboard();
+        setEvents();
+        setFunctions();
+        setTicker();
+    }
+
+    public void setLeaderboard(){
+        players.sort(Comparator.comparing(Player::getPoints).reversed());
+        for(int i = 0; i < playerLabels.size() && i < players.size(); i++){
+            playerLabels.get(i).setText(players.get(i).getName());
+            scoreLabels.get(i).setText(String.valueOf(players.get(i).getPoints()) + " pts");
+            //If 2 players are tied, do not show place number/image for second+ player to indicate they are tied for above place
+            if(i > 0 && players.get(i).getPoints() == players.get(i - 1).getPoints()){
+                if(i < 3){
+                    placeImages.get(i).setVisible(false);
+                } else {
+                    placeLabels.get(i - 3).setVisible(false);
+                }
+            }
+            else{
+                if(i < 3){
+                    placeImages.get(i).setVisible(true);
+                } else {
+                    placeLabels.get(i - 3).setVisible(true);
+                }
+            }
+        }
+        players.sort(Comparator.comparing(Player::getName));
+    }
+
+    private void setEvents(){
+        try{
+            sc = new Scanner(getFile("events.txt"));
+            vboxSchedule.setSpacing(10);
+            while(sc.hasNextLine()){
+                String[] elements = sc.nextLine().split(";");
+                if(elements[0].startsWith("{"))
+                    continue;
+                String eventName = elements[0];
+                int round = Integer.parseInt(elements[1]);
+                AnchorPane anchorPane = new AnchorPane();
+                anchorPane.setStyle("-fx-border-color: black; -fx-border-width: 2; -fx-border-style: solid;");
+                anchorPane.setPrefHeight(Region.USE_COMPUTED_SIZE);
+                anchorPane.setMaxWidth(1900);
+
+                Label eventLabel = new Label(eventName);
+                eventLabel.setLayoutX(5);
+                eventLabel.setLayoutY(5);
+                eventLabel.setPrefWidth(Region.USE_COMPUTED_SIZE);
+                eventLabel.setFont(new Font(fontSize));
+                eventLabel.setOnMouseClicked(event -> {
+                    if(event.getButton() == MouseButton.PRIMARY && event.getClickCount() == 2){
+                        onEventDoubleClicked(round);
+                    }
+                });
+                anchorPane.getChildren().add(eventLabel);
+
+                int count = 2;
+                int xCord = 250;
+                int yCord = 5;
+                Event sportEvent = new Event();
+                while(elements.length >= count + 3){
+                    String placeName = elements[count];
+                    sportEvent.setName(eventName);
+                    Label placeLabel = new Label(placeName + " (" + elements[count + 2] + "pts)");
+                    placeLabel.setLayoutX(xCord);
+                    placeLabel.setLayoutY(yCord);
+                    yCord += 55;//label height = 45 + 10 for spacing
+                    placeLabel.setPrefWidth(Region.USE_COMPUTED_SIZE);
+                    placeLabel.setFont(new Font(fontSize));
+                    anchorPane.getChildren().add(placeLabel);
+
+                    int points = Integer.parseInt(elements[count + 2]);
+                    EventPlace eventPlace = new EventPlace();
+                    if(elements[count + 1].toLowerCase().equals("many")) {
+                        //checkboxes of all players
+                        eventPlace.setPlaceName("checkboxes");
+                        sportEvent.getPlaces().add(eventPlace);
+                        GridPane gridPane = new GridPane();
+                        gridPane.setPadding(new Insets(20));
+                        gridPane.setHgap(15);
+                        gridPane.setVgap(15);
+                        gridPane.setLayoutX(xCord);
+                        gridPane.setLayoutY(yCord);
+                        double playerSize = players.size();
+                        int rows = (int) Math.ceil(playerSize / 5);
+                        for(int r = 0; r < rows; r++){
+                            for(int c = 0; c < 5 && r * 5 + c < players.size(); c++){
+                                Player player = players.get(r * 5 + c);
+                                CheckBox ckBox = new CheckBox(player.getName());
+                                ckBox.setUserData(player);
+                                ckBox.setOnAction(event -> {
+                                    CheckBox source = (CheckBox) event.getSource();
+                                    Player associatedPlayer = (Player) source.getUserData();
+                                    if (source.isSelected()) {
+                                        eventPlace.getWinners().add(player);
+                                        associatedPlayer.setPoints(associatedPlayer.getPoints() + points);
+                                        System.out.println(associatedPlayer.getName() + " " + associatedPlayer.getPoints());
+                                    } else {
+                                        eventPlace.getWinners().remove(player);
+                                        associatedPlayer.setPoints(associatedPlayer.getPoints() - points);
+                                        System.out.println(associatedPlayer.getName() + " " + associatedPlayer.getPoints());
+                                    }
+                                });
+                                //TODO - set checked if loaded
+                                ckBox.setFont(new Font(fontSize2));
+                                gridPane.add(ckBox, c, r);
+                            }
+                        }
+                        anchorPane.getChildren().add(gridPane);
+                    } else {
+                        //dropdowns per place
+                        for (int i = 0; i < Integer.parseInt(elements[count + 1]); i++) {
+                            eventPlace.setPlaceName(placeName);
+                            SearchableComboBox<Player> comboBox = getPlayerComboBox(points, eventPlace);
+                            //TODO - set winner if loaded
+                            comboBox.setLayoutX(xCord);
+                            comboBox.setLayoutY(yCord);
+                            yCord += 62;//combobox height = 52 + 10 for spacing
+                            anchorPane.getChildren().add(comboBox);
+                        }
+                        sportEvent.getPlaces().add(eventPlace);
+                    }
+                    xCord += 335;
+                    yCord = 5;
+                    count+=3;
+                }
+                saveData.getEvents().add(sportEvent);
+                vboxSchedule.getChildren().add(anchorPane);
+            }
+        }catch (Exception e){}
+    }
+
+    private void setTicker(){
+        players.sort(Comparator.comparing(Player::getPoints).reversed().thenComparing(Player::getName));
+        HBox footer = new HBox();
+        footer.setStyle("-fx-background-color: #2b2b2b; -fx-padding: 10;");
+
+        StringBuilder sb = new StringBuilder();
+        for(Player player : players){
+            sb.append(player.getName());
+            sb.append(": ");
+            sb.append(player.getPoints());
+            sb.append(" pts\t\t");
+        }
+
+        Text textNode = new Text(sb.toString());
+        textNode.setFill(Color.WHITE);
+        textNode.setFont(new Font(18));
+
+        // Apply clip to constrain text visibility
+        Rectangle clip = new Rectangle();
+        clip.widthProperty().bind(footer.widthProperty());
+        clip.heightProperty().bind(footer.heightProperty());
+        footer.setClip(clip);
+        footer.getChildren().add(textNode);
+        borderPane.setBottom(footer);
+
+        // Animate text movement
+        //TODO - adjust timing and end point to be based on
+        TranslateTransition transition = new TranslateTransition(Duration.seconds(players.size() * 1.5), textNode);
+        transition.setFromX(2000); // Start off-screen
+        transition.setToX(-players.size() * 200); // End off-screen
+        transition.setInterpolator(Interpolator.LINEAR);
+        transition.setCycleCount(Animation.INDEFINITE);
+        transition.play();
+    }
+
+    private void setFunctions(){
+        AnchorPane addPlayerPane = new AnchorPane();
+        addPlayerPane.setStyle("-fx-border-color: black; -fx-border-width: 2; -fx-border-style: solid;");
+        addPlayerPane.setPrefHeight(Region.USE_COMPUTED_SIZE);
+
+        Label addPlayerLabel = new Label("Add Player");
+        addPlayerLabel.setLayoutX(5);
+        addPlayerLabel.setLayoutY(5);
+        addPlayerLabel.setPrefWidth(Region.USE_COMPUTED_SIZE);
+        addPlayerLabel.setFont(new Font(fontSize));
+
+        TextField addPlayerInput = new TextField();
+        addPlayerInput.setPromptText("Player Name");
+        addPlayerInput.setLayoutX(177);
+        addPlayerInput.setLayoutY(5);
+        addPlayerInput.setFont(new Font(fontSize2));
+
+        Button addPlayerButton = new Button("Add");
+        addPlayerButton.setLayoutX(483);
+        addPlayerButton.setLayoutY(5);
+        addPlayerButton.setFont(new Font(fontSize2));
+        addPlayerButton.setOnAction(Event -> {
+            players.add(new Player(addPlayerInput.getText()));
+            addPlayerInput.setText("");
+        });
+
+        addPlayerPane.getChildren().add(addPlayerLabel);
+        addPlayerPane.getChildren().add(addPlayerInput);
+        addPlayerPane.getChildren().add(addPlayerButton);
+
+        AnchorPane addPointsPane = new AnchorPane();
+        addPointsPane.setStyle("-fx-border-color: black; -fx-border-width: 2; -fx-border-style: solid;");
+        addPointsPane.setPrefHeight(Region.USE_COMPUTED_SIZE);
+
+        Label addPointsLabel = new Label("Add Points");
+        addPointsLabel.setLayoutX(5);
+        addPointsLabel.setLayoutY(5);
+        addPointsLabel.setPrefWidth(Region.USE_COMPUTED_SIZE);
+        addPointsLabel.setFont(new Font(fontSize));
+
+        SearchableComboBox addPointsComboBox = getPlayerComboBox(0, new EventPlace());
+        addPointsComboBox.setLayoutX(177);
+        addPointsComboBox.setLayoutY(5);
+
+        TextField addPointsInput = new TextField();
+        addPointsInput.setPromptText("Points");
+        addPointsInput.setLayoutX(494);
+        addPointsInput.setLayoutY(5);
+        addPointsInput.setPrefWidth(103);
+        addPointsInput.setFont(new Font(fontSize2));
+
+        Button addPointsButton = new Button("Add");
+        addPointsButton.setLayoutX(607);
+        addPointsButton.setLayoutY(5);
+        addPointsButton.setFont(new Font(fontSize2));
+        addPointsButton.setOnAction(Event -> {
+            Player player = ((Player) addPointsComboBox.getValue());
+            player.setPoints(player.getPoints() + Integer.parseInt(addPointsInput.getText()));
+            addPointsInput.setText("");
+            addPointsComboBox.getSelectionModel().clearSelection();
+            addPointsComboBox.setValue(null);
+        });
+
+        addPointsPane.getChildren().add(addPointsLabel);
+        addPointsPane.getChildren().add(addPointsComboBox);
+        addPointsPane.getChildren().add(addPointsInput);
+        addPointsPane.getChildren().add(addPointsButton);
+
+
+        AnchorPane subtractPointsPane = new AnchorPane();
+        subtractPointsPane.setStyle("-fx-border-color: black; -fx-border-width: 2; -fx-border-style: solid;");
+        subtractPointsPane.setPrefHeight(Region.USE_COMPUTED_SIZE);
+
+        Label subtractPointsLabel = new Label("Subtract Points");
+        subtractPointsLabel.setLayoutX(5);
+        subtractPointsLabel.setLayoutY(5);
+        subtractPointsLabel.setPrefWidth(Region.USE_COMPUTED_SIZE);
+        subtractPointsLabel.setFont(new Font(fontSize));
+
+        SearchableComboBox subtractPointsComboBox = getPlayerComboBox(0, new EventPlace());
+        subtractPointsComboBox.setLayoutX(244);
+        subtractPointsComboBox.setLayoutY(5);
+
+        TextField subtractPointsInput = new TextField();
+        subtractPointsInput.setPromptText("Points");
+        subtractPointsInput.setLayoutX(561);
+        subtractPointsInput.setLayoutY(5);
+        subtractPointsInput.setPrefWidth(103);
+        subtractPointsInput.setFont(new Font(fontSize2));
+
+        Button subtractPointsButton = new Button("subtract");
+        subtractPointsButton.setLayoutX(674);
+        subtractPointsButton.setLayoutY(5);
+        subtractPointsButton.setFont(new Font(fontSize2));
+        subtractPointsButton.setOnAction(Event -> {
+            Player player = ((Player) subtractPointsComboBox.getValue());
+            player.setPoints(player.getPoints() - Integer.parseInt(subtractPointsInput.getText()));
+            subtractPointsInput.setText("");
+            subtractPointsComboBox.getSelectionModel().clearSelection();
+            subtractPointsComboBox.setValue(null);
+        });
+
+        subtractPointsPane.getChildren().add(subtractPointsLabel);
+        subtractPointsPane.getChildren().add(subtractPointsComboBox);
+        subtractPointsPane.getChildren().add(subtractPointsInput);
+        subtractPointsPane.getChildren().add(subtractPointsButton);
+
+        AnchorPane pane = new AnchorPane();
+        pane.setStyle("-fx-border-color: black; -fx-border-width: 2; -fx-border-style: solid;");
+        pane.setPrefHeight(Region.USE_COMPUTED_SIZE);
+        Label lbl = new Label();
+        lbl.setLayoutY(0);
+        lbl.setLayoutX(150);
+        lbl.setFont(new Font(24));
+        Button temp = new Button("Get Screen Size");
+        temp.setLayoutX(0);
+        temp.setLayoutY(5);
+        temp.setOnAction(Event -> {
+            Rectangle2D visualBounds = Screen.getPrimary().getVisualBounds();
+
+            double usableWidth = visualBounds.getWidth();
+            double usableHeight = visualBounds.getHeight();
+
+            lbl.setText("Usable Screen Size: " + usableWidth + " x " + usableHeight);
+
+        });
+        pane.getChildren().add(temp);
+        pane.getChildren().add(lbl);
+        vboxFunc.getChildren().add(pane);
+
+        vboxFunc.setSpacing(5);
+        vboxFunc.getChildren().add(addPlayerPane);
+        vboxFunc.getChildren().add(addPointsPane);
+        vboxFunc.getChildren().add(subtractPointsPane);
+    }
+
+
+    private SearchableComboBox<Player> getPlayerComboBox(int points, EventPlace eventPlace) {
+        SearchableComboBox<Player> comboBox = new SearchableComboBox<>(players);
+        // Define the StringConverter to show the Name field
+        comboBox.setConverter(new StringConverter<Player>() {
+            @Override
+            public String toString(Player player) {
+                return (player == null) ? "" : player.getName();
+            }
+            @Override
+            public Player fromString(String string) {
+                // Not needed unless the ComboBox is editable
+                return null;
+            }
+        });
+        if(points > 0) {
+            // Handle Selection Changes (Retrieves the full object)
+            comboBox.getSelectionModel().selectedItemProperty().addListener((observable, oldValue, newValue) -> {
+                if (newValue != null) {
+                    eventPlace.getWinners().add(newValue);
+                    newValue.setPoints(newValue.getPoints() + points);
+                }
+                if (oldValue != null) {
+                    eventPlace.getWinners().remove(oldValue);
+                    oldValue.setPoints(oldValue.getPoints() - points);
+                }
+            });
+        }
+        comboBox.setStyle("-fx-font-size: " + fontSize2 + "px;");
+
+        return comboBox;
+    }
+
+    private File getFile(String fileName){
+        String userHome = System.getProperty("user.home");
+        Path filePath = Path.of(userHome, "Desktop", fileName);
+        return filePath.toFile();
+    }
+
+    private void onEventDoubleClicked(int round){
+        FileInputStream stream = null;
+        try {
+            switch (round) {
+                case 1:
+                    stream = new FileInputStream(getFile("EventImages/round1.png"));
+                    break;
+                case 2:
+                    stream = new FileInputStream(getFile("EventImages/round2.png"));
+                    break;
+                case 3:
+                    stream = new FileInputStream(getFile("EventImages/round3.png"));
+                    break;
+                case 4:
+                    stream = new FileInputStream(getFile("EventImages/round4.png"));
+                    break;
+                case 5:
+                    stream = new FileInputStream(getFile("EventImages/round5.png"));
+                    break;
+                case 6:
+                    stream = new FileInputStream(getFile("EventImages/round6.png"));
+                    break;
+                case 7:
+                    stream = new FileInputStream(getFile("EventImages/round7.png"));
+                    break;
+                case 8:
+                    stream = new FileInputStream(getFile("EventImages/round8.png"));
+                    break;
+                case 9:
+                    stream = new FileInputStream(getFile("EventImages/round9.png"));
+                    break;
+                case 10:
+                    stream = new FileInputStream(getFile("EventImages/round10.png"));
+                    break;
+                case 11:
+                    stream = new FileInputStream(getFile("EventImages/round11.png"));
+                    break;
+                case 12:
+                    stream = new FileInputStream(getFile("EventImages/round12.png"));
+                    break;
+                case 13:
+                    stream = new FileInputStream(getFile("EventImages/round13.png"));
+                    break;
+                case 14:
+                    stream = new FileInputStream(getFile("EventImages/round14.png"));
+                    break;
+                case 15:
+                    stream = new FileInputStream(getFile("EventImages/round15.png"));
+                    break;
+                case 16:
+                    stream = new FileInputStream(getFile("EventImages/round16.png"));
+                    break;
+                case 17:
+                    stream = new FileInputStream(getFile("EventImages/round17.png"));
+                    break;
+                case 18:
+                    stream = new FileInputStream(getFile("EventImages/round18.png"));
+                    break;
+                case 19:
+                    stream = new FileInputStream(getFile("EventImages/round19.png"));
+                    break;
+                case 20:
+                    stream = new FileInputStream(getFile("EventImages/round20.png"));
+                    break;
+                default:
+                    stream = new FileInputStream("@../images/broken.jpg");
+                    break;
+            }
+        }catch (Exception e){}
+        imgEvent.setImage(new Image(stream));
+        tabPane.getSelectionModel().select(tabCurrentEvent);
+    }
+
+    public void printNodeDetails(Node node, String indent) {
+        // Print node's class name and ID
+        String id = (node.getId() != null) ? node.getId() : "No ID";
+        System.out.println(indent + "Node Class: " + node.getClass().getSimpleName() +
+                " | fx:id / ID: " + id);
+
+        // Print common properties
+        System.out.println(indent + "  Layout X/Y: (" + node.getLayoutX() + ", " + node.getLayoutY() + ")");
+        System.out.println(indent + "  Translate X/Y/Z: (" + node.getTranslateX() + ", " +
+                node.getTranslateY() + ", " + node.getTranslateZ() + ")");
+        System.out.println(indent + "  Height/Width: (" + node.getBoundsInLocal().getHeight() + ", " +
+                node.getBoundsInLocal().getWidth() + ")");
+        System.out.println(indent + "  Visible: " + node.isVisible() + " | Opacity: " + node.getOpacity());
+        System.out.println(indent + "  Style Classes: " + node.getStyleClass());
+        System.out.println(indent + "  Value: " + node.toString());
+
+        // Print text-specific properties if the node is a Label, Button, etc.
+        if (node instanceof Labeled) {
+            System.out.println(indent + "  Text Content: \"" + ((Labeled) node).getText() + "\"");
+        }
+
+        // Recursively traverse if it's a Parent node
+        if (node instanceof Parent) {
+            Parent parent = (Parent) node;
+            for (Node child : parent.getChildrenUnmodifiable()) {
+                printNodeDetails(child, indent + "  ");
+            }
+        }
+    }
+}
