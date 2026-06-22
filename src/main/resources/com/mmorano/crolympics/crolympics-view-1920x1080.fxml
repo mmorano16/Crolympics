@@ -22,7 +22,7 @@
          <content>
             <AnchorPane fx:id="paneScoreboard" minHeight="0.0" minWidth="0.0" prefHeight="180.0" prefWidth="200.0" style="-fx-background-color: white">
                <children>
-                  <ImageView fx:id="imgScoreboard" fitHeight="1080.0" fitWidth="1920.0" layoutX="440.0" pickOnBounds="true" preserveRatio="true" scaleX="1.25" x="100.0">
+                  <ImageView fx:id="imgScoreboard" fitHeight="1080.0" fitWidth="1920.0" layoutX="525.0" pickOnBounds="true" preserveRatio="true" scaleX="1.25" scaleY="1.25" x="100.0">
                      <image>
                         <Image url="@../images/logo.png" />
                      </image>
@@ -30,7 +30,7 @@
                   <GridPane gridLinesVisible="true" prefHeight="1049.0" prefWidth="1920.0" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0">
                     <columnConstraints>
                       <ColumnConstraints hgrow="SOMETIMES" percentWidth="5.0" />
-                        <ColumnConstraints hgrow="SOMETIMES" minWidth="10.0" percentWidth="80.0" prefWidth="100.0" />
+                        <ColumnConstraints hgrow="SOMETIMES" minWidth="10.0" percentWidth="85.0" prefWidth="100.0" />
                       <ColumnConstraints hgrow="SOMETIMES" minWidth="10.0" prefWidth="100.0" />
                     </columnConstraints>
                     <rowConstraints>
@@ -246,7 +246,7 @@
                               <Insets left="20.0" />
                            </padding>
                         </Label>
-                        <Label fx:id="lblScore1" prefHeight="70.0" prefWidth="331.0" text="15 Points" GridPane.columnIndex="2">
+                        <Label fx:id="lblScore1" prefHeight="70.0" prefWidth="331.0" text="15 pts" GridPane.columnIndex="2">
                            <font>
                               <Font size="48.0" />
                            </font>
@@ -446,7 +446,7 @@
             </BorderPane>
         </content>
       </Tab>
-      <Tab fx:id="tabFuctions" text="Fuctions">
+      <Tab fx:id="tabFunctions" text="Functions">
         <content>
           <AnchorPane minHeight="0.0" minWidth="0.0" prefHeight="180.0" prefWidth="200.0">
                <children>

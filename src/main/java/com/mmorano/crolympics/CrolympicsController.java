@@ -166,10 +166,11 @@ public class CrolympicsController{
                         gridPane.setLayoutX(xCord);
                         gridPane.setLayoutY(yCord);
                         double playerSize = players.size();
-                        int rows = (int) Math.ceil(playerSize / 5);
+                        int rows = (int) Math.ceil(playerSize / 4);
+                        int columns = 4;
                         for(int r = 0; r < rows; r++){
-                            for(int c = 0; c < 5 && r * 5 + c < players.size(); c++){
-                                Player player = players.get(r * 5 + c);
+                            for(int c = 0; c < columns && r * columns + c < players.size(); c++){
+                                Player player = players.get(r * columns + c);
                                 CheckBox ckBox = new CheckBox(player.getName());
                                 ckBox.setUserData(player);
                                 ckBox.setOnAction(event -> {
