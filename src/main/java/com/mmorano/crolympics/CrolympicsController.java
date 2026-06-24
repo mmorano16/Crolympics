@@ -51,6 +51,7 @@ public class CrolympicsController{
     private final int fontSize = 32, fontSize2 = 24;
     private CrolympicsSave save = new CrolympicsSave();
     private SaveData saveData = new SaveData();
+    private ArrayList<String> bonusPoints = new ArrayList<>();
 
     public void initialize(){
         players = FXCollections.observableArrayList();
@@ -80,8 +81,9 @@ public class CrolympicsController{
                 save.TrySave(getSaveData());
         });
         players.sort(Comparator.comparing(Player::getPoints).thenComparing(Player::getName));
-        setLeaderboard();
         setEvents();
+        addBonusPoints();
+        setLeaderboard();
         setFunctions();
         setTicker();
     }
@@ -143,10 +145,8 @@ public class CrolympicsController{
                 int count = 2;
                 int xCord = 250;
                 int yCord = 5;
-                SportEvent sportEvent = new SportEvent();
                 while(elements.length >= count + 3){
                     String placeName = elements[count];
-                    sportEvent.setName(eventName);
                     Label placeLabel = new Label(placeName + " (" + elements[count + 2] + "pts)");
                     placeLabel.setLayoutX(xCord);
                     placeLabel.setLayoutY(yCord);
@@ -156,11 +156,8 @@ public class CrolympicsController{
                     anchorPane.getChildren().add(placeLabel);
 
                     int points = Integer.parseInt(elements[count + 2]);
-                    EventPlace eventPlace = new EventPlace();
                     if(elements[count + 1].equalsIgnoreCase("many")) {
                         //checkboxes of all players
-                        eventPlace.setPlaceName("checkboxes");
-                        sportEvent.getPlaces().add(eventPlace);
                         GridPane gridPane = new GridPane();
                         gridPane.setPadding(new Insets(20));
                         gridPane.setHgap(15);
@@ -179,11 +176,9 @@ public class CrolympicsController{
                                     CheckBox source = (CheckBox) event.getSource();
                                     Player associatedPlayer = (Player) source.getUserData();
                                     if (source.isSelected()) {
-                                        eventPlace.getWinners().add(player);
                                         associatedPlayer.setPoints(associatedPlayer.getPoints() + points);
                                         System.out.println(associatedPlayer.getName() + " " + associatedPlayer.getPoints());
                                     } else {
-                                        eventPlace.getWinners().remove(player);
                                         associatedPlayer.setPoints(associatedPlayer.getPoints() - points);
                                         System.out.println(associatedPlayer.getName() + " " + associatedPlayer.getPoints());
                                     }
@@ -192,7 +187,7 @@ public class CrolympicsController{
                                     Player existingPlayer = existingEvent.getPlaces().get(0).getWinners().stream().filter(x -> x.getName().equals(player.getName())).findFirst().orElse(null);
                                     if(existingPlayer != null){
                                         ckBox.setSelected(true);
-                                        //existingPlayer.setPoints(existingPlayer.getPoints() + existingEvent.getPlaces().get(0).getWinners().get(0).getPoints());
+                                        player.setPoints(player.getPoints() + existingEvent.getPlaces().get(0).getPoints());
                                     }
                                 }
                                 ckBox.setFont(new Font(fontSize2));
@@ -203,15 +198,14 @@ public class CrolympicsController{
                     } else {
                         //dropdowns per place
                         for (int i = 0; i < Integer.parseInt(elements[count + 1]); i++) {
-                            eventPlace.setPlaceName(placeName);
-                            SearchableComboBox<Player> comboBox = getPlayerComboBox(points, eventPlace);
+                            SearchableComboBox<Player> comboBox = getPlayerComboBox(points);
                             if(existingEvent != null && existingEvent.getPlaces().size() > 0){
-                                EventPlace existingPlace = existingEvent.getPlaces().stream().filter(x -> x.getPlaceName().equals(placeName)).findFirst().orElse(null);
+                                EventPlace existingPlace = existingEvent.getPlaces().stream().filter(x -> x.getPlaceName().startsWith(placeName)).findFirst().orElse(null);
                                 if(existingPlace != null && existingPlace.getWinners().size() > i){
                                     int index = i;
                                     Player player = players.stream().filter(x -> x.getName().equals(existingPlace.getWinners().get(index).getName())).findFirst().orElse(null);
                                     if(player != null){
-                                        //player.setPoints(player.getPoints() + existingPlace.getWinners().get(index).getPoints());
+                                        //player.setPoints(player.getPoints() + existingPlace.getPoints());
                                         comboBox.setValue(player);
                                     }
                                 }
@@ -221,21 +215,17 @@ public class CrolympicsController{
                             yCord += 62;//combobox height = 52 + 10 for spacing
                             anchorPane.getChildren().add(comboBox);
                         }
-                        sportEvent.getPlaces().add(eventPlace);
                     }
                     xCord += 335;
                     yCord = 5;
                     count+=3;
                 }
-
-                if(existingEvent == null)
-                    saveData.getEvents().add(sportEvent);
                 vboxSchedule.getChildren().add(anchorPane);
             }
         }catch (Exception ignored){}
     }
 
-    private SearchableComboBox<Player> getPlayerComboBox(int points, EventPlace eventPlace) {
+    private SearchableComboBox<Player> getPlayerComboBox(int points) {
         SearchableComboBox<Player> comboBox = new SearchableComboBox<>(players);
         // Define the StringConverter to show the Name field
         comboBox.setConverter(new StringConverter<>() {
@@ -254,11 +244,9 @@ public class CrolympicsController{
             // Handle Selection Changes (Retrieves the full object)
             comboBox.getSelectionModel().selectedItemProperty().addListener((observable, oldValue, newValue) -> {
                 if (newValue != null) {
-                    eventPlace.getWinners().add(newValue);
                     newValue.setPoints(newValue.getPoints() + points);
                 }
                 if (oldValue != null) {
-                    eventPlace.getWinners().remove(oldValue);
                     oldValue.setPoints(oldValue.getPoints() - points);
                 }
             });
@@ -327,6 +315,7 @@ public class CrolympicsController{
         addPlayerButton.setOnAction(Event -> {
             players.add(new Player(addPlayerInput.getText()));
             addPlayerInput.setText("");
+            //TODO - edit Players.txt
         });
 
         addPlayerPane.getChildren().add(addPlayerLabel);
@@ -343,7 +332,7 @@ public class CrolympicsController{
         addPointsLabel.setPrefWidth(Region.USE_COMPUTED_SIZE);
         addPointsLabel.setFont(new Font(fontSize));
 
-        SearchableComboBox<Player> addPointsComboBox = getPlayerComboBox(0, new EventPlace());
+        SearchableComboBox<Player> addPointsComboBox = getPlayerComboBox(0);
         addPointsComboBox.setLayoutX(177);
         addPointsComboBox.setLayoutY(5);
 
@@ -359,11 +348,15 @@ public class CrolympicsController{
         addPointsButton.setLayoutY(5);
         addPointsButton.setFont(new Font(fontSize2));
         addPointsButton.setOnAction(Event -> {
-            Player player = addPointsComboBox.getValue();
-            player.setPoints(player.getPoints() + Integer.parseInt(addPointsInput.getText()));
-            addPointsInput.setText("");
-            addPointsComboBox.getSelectionModel().clearSelection();
-            addPointsComboBox.setValue(null);
+            if(!addPointsInput.getText().equals("")) {
+                Player player = addPointsComboBox.getValue();
+                player.setPoints(player.getPoints() + Integer.parseInt(addPointsInput.getText()));
+                bonusPoints.add(player.getName() + ";" + addPointsInput.getText());
+                addPointsInput.setText("");
+                addPointsComboBox.getSelectionModel().clearSelection();
+                addPointsComboBox.setValue(null);
+                save.TrySave(getSaveData());
+            }
         });
 
         addPointsPane.getChildren().add(addPointsLabel);
@@ -382,7 +375,7 @@ public class CrolympicsController{
         subtractPointsLabel.setPrefWidth(Region.USE_COMPUTED_SIZE);
         subtractPointsLabel.setFont(new Font(fontSize));
 
-        SearchableComboBox<Player> subtractPointsComboBox = getPlayerComboBox(0, new EventPlace());
+        SearchableComboBox<Player> subtractPointsComboBox = getPlayerComboBox(0);
         subtractPointsComboBox.setLayoutX(244);
         subtractPointsComboBox.setLayoutY(5);
 
@@ -398,11 +391,15 @@ public class CrolympicsController{
         subtractPointsButton.setLayoutY(5);
         subtractPointsButton.setFont(new Font(fontSize2));
         subtractPointsButton.setOnAction(Event -> {
-            Player player = subtractPointsComboBox.getValue();
-            player.setPoints(player.getPoints() - Integer.parseInt(subtractPointsInput.getText()));
-            subtractPointsInput.setText("");
-            subtractPointsComboBox.getSelectionModel().clearSelection();
-            subtractPointsComboBox.setValue(null);
+            if(!subtractPointsInput.getText().equals("")) {
+                Player player = subtractPointsComboBox.getValue();
+                player.setPoints(player.getPoints() - Integer.parseInt(subtractPointsInput.getText()));
+                bonusPoints.add(player.getName() + ";-" + subtractPointsInput.getText());
+                subtractPointsInput.setText("");
+                subtractPointsComboBox.getSelectionModel().clearSelection();
+                subtractPointsComboBox.setValue(null);
+                save.TrySave(getSaveData());
+            }
         });
 
         subtractPointsPane.getChildren().add(subtractPointsLabel);
@@ -446,6 +443,7 @@ public class CrolympicsController{
         ScrollPane sPane = (ScrollPane) nodes.get(0);
         VBox vbox = (VBox) sPane.getContent();
         nodes = vbox.getChildren();
+        int placePoints = 0;
         for(Node node : nodes){
             aPane = (AnchorPane) node;
             ObservableList<Node> aNodes = aPane.getChildren();
@@ -458,14 +456,17 @@ public class CrolympicsController{
                     data.getEvents().add(event);
                 } else if(aNode.getClass() == Label.class) {
                     eventPlace = new EventPlace();
-                    eventPlace.setPlaceName(((Label)aNode).getText());
+                    String placeName = ((Label)aNode).getText();
+                    eventPlace.setPlaceName(placeName);
+                    eventPlace.setPoints(parsePoints(placeName));
                     event.getPlaces().add(eventPlace);
                 } else {
                     while(i < aNodes.size() && aNode.getClass() != Label.class){
                         if(aNode.getClass() == SearchableComboBox.class){
                             Player player = (Player)((SearchableComboBox)aNode).getValue();
-                            if(player != null)
+                            if(player != null) {
                                 eventPlace.getWinners().add(player);
+                            }
                         } else if(aNode.getClass() == GridPane.class){
                             ObservableList<Node> gridNodes = ((GridPane)aNode).getChildren();
                             for(Node gridNode : gridNodes){
@@ -482,7 +483,33 @@ public class CrolympicsController{
                 }
             }
         }
+        //Add bonus points
+        if(bonusPoints.size() > 0) {
+            SportEvent bonusEvent = new SportEvent();
+            bonusEvent.setName("bonus");
+            for (String bonus : bonusPoints) {
+                EventPlace place = new EventPlace();
+                String[] elements = bonus.split(";");
+                place.setPlaceName(elements[0]);
+                place.setPoints(Integer.parseInt(elements[1]));
+                bonusEvent.getPlaces().add(place);
+            }
+            data.getEvents().add(bonusEvent);
+        }
         return data;
+    }
+
+    private void addBonusPoints(){
+        SportEvent bonusSport = saveData.getEvents().stream().filter(x -> x.getName().equals("bonus")).findFirst().orElse(null);
+        if(bonusSport != null){
+            for(EventPlace place : bonusSport.getPlaces()){
+                Player player = players.stream().filter(x -> x.getName().equals(place.getPlaceName())).findFirst().orElse(null);
+                if(player != null){
+                    player.setPoints(player.getPoints() + place.getPoints());
+                    bonusPoints.add(player.getName() + ";" + place.getPoints());
+                }
+            }
+        }
     }
 
     private File getFile(String fileName){
@@ -520,6 +547,15 @@ public class CrolympicsController{
         }catch (Exception ignored){}
         imgEvent.setImage(new Image(stream));
         tabPane.getSelectionModel().select(tabCurrentEvent);
+    }
+
+    private int parsePoints(String st){
+        int start = st.indexOf("(");
+        int end = st.lastIndexOf("p");
+        int result = 0;
+        if(start > -1 && end > start)
+            result = Integer.parseInt(st.substring(start + 1, end));
+        return result;
     }
 
     public void printNodeDetails(Node node, String indent) {
