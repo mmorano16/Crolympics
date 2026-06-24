@@ -1,7 +1,7 @@
 package com.mmorano.crolympics;
 
 import com.mmorano.crolympics.Save.CrolympicsSave;
-import com.mmorano.crolympics.Save.Event;
+import com.mmorano.crolympics.Save.SportEvent;
 import com.mmorano.crolympics.Save.EventPlace;
 import com.mmorano.crolympics.Save.SaveData;
 import javafx.animation.Animation;
@@ -32,6 +32,8 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.nio.file.Path;
 import java.util.*;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 public class CrolympicsController{
     @FXML private Label lblPlayer1, lblPlayer2, lblPlayer3, lblPlayer4, lblPlayer5, lblPlayer6, lblPlayer7, lblPlayer8, lblPlayer9, lblPlayer10, lblPlayer11, lblPlayer12, lblPlayer13, lblPlayer14, lblPlayer15;
@@ -74,8 +76,10 @@ public class CrolympicsController{
                 setTicker();
         });
         tabSchedule.selectedProperty().addListener((observable, oldValue, newValue) -> {
-            if (oldValue)
+            if (oldValue) {
+                getSaveData();
                 save.TrySave(saveData);
+            }
         });
         players.sort(Comparator.comparing(Player::getPoints).thenComparing(Player::getName));
         setLeaderboard();
@@ -109,6 +113,8 @@ public class CrolympicsController{
     }
 
     private void setEvents(){
+        HashMap<String, SportEvent> existingEventsMap = (HashMap<String, SportEvent>) saveData.getEvents().stream()
+                .collect(Collectors.toMap(SportEvent::getName, Function.identity()));
         try{
             sc = new Scanner(getFile("events.txt"));
             vboxSchedule.setSpacing(10);
@@ -117,6 +123,7 @@ public class CrolympicsController{
                 if(elements[0].startsWith("{"))
                     continue;
                 String eventName = elements[0];
+                SportEvent existingEvent = existingEventsMap.get(eventName);
                 int round = Integer.parseInt(elements[1]);
                 AnchorPane anchorPane = new AnchorPane();
                 anchorPane.setStyle("-fx-border-color: black; -fx-border-width: 2; -fx-border-style: solid;");
@@ -138,7 +145,7 @@ public class CrolympicsController{
                 int count = 2;
                 int xCord = 250;
                 int yCord = 5;
-                Event sportEvent = new Event();
+                SportEvent sportEvent = new SportEvent();
                 while(elements.length >= count + 3){
                     String placeName = elements[count];
                     sportEvent.setName(eventName);
@@ -183,7 +190,13 @@ public class CrolympicsController{
                                         System.out.println(associatedPlayer.getName() + " " + associatedPlayer.getPoints());
                                     }
                                 });
-                                //TODO - set checked if loaded
+                                if(existingEvent != null && existingEvent.getPlaces().size() > 0){
+                                    Player existingPlayer = existingEvent.getPlaces().get(0).getWinners().stream().filter(x -> x.getName().equals(player.getName())).findFirst().orElse(null);
+                                    if(existingPlayer != null){
+                                        ckBox.setSelected(true);
+                                        //existingPlayer.setPoints(existingPlayer.getPoints() + existingEvent.getPlaces().get(0).getWinners().get(0).getPoints());
+                                    }
+                                }
                                 ckBox.setFont(new Font(fontSize2));
                                 gridPane.add(ckBox, c, r);
                             }
@@ -194,7 +207,17 @@ public class CrolympicsController{
                         for (int i = 0; i < Integer.parseInt(elements[count + 1]); i++) {
                             eventPlace.setPlaceName(placeName);
                             SearchableComboBox<Player> comboBox = getPlayerComboBox(points, eventPlace);
-                            //TODO - set winner if loaded
+                            if(existingEvent != null && existingEvent.getPlaces().size() > 0){
+                                EventPlace existingPlace = existingEvent.getPlaces().stream().filter(x -> x.getPlaceName().equals(placeName)).findFirst().orElse(null);
+                                if(existingPlace != null && existingPlace.getWinners().size() > i){
+                                    int index = i;
+                                    Player player = players.stream().filter(x -> x.getName().equals(existingPlace.getWinners().get(index).getName())).findFirst().orElse(null);
+                                    if(player != null){
+                                        //player.setPoints(player.getPoints() + existingPlace.getWinners().get(index).getPoints());
+                                        comboBox.setValue(player);
+                                    }
+                                }
+                            }
                             comboBox.setLayoutX(xCord);
                             comboBox.setLayoutY(yCord);
                             yCord += 62;//combobox height = 52 + 10 for spacing
@@ -206,7 +229,9 @@ public class CrolympicsController{
                     yCord = 5;
                     count+=3;
                 }
-                saveData.getEvents().add(sportEvent);
+
+                if(existingEvent == null)
+                    saveData.getEvents().add(sportEvent);
                 vboxSchedule.getChildren().add(anchorPane);
             }
         }catch (Exception ignored){}
@@ -381,6 +406,11 @@ public class CrolympicsController{
         vboxFunc.getChildren().add(addPlayerPane);
         vboxFunc.getChildren().add(addPointsPane);
         vboxFunc.getChildren().add(subtractPointsPane);
+    }
+
+    private SaveData getSaveData(){
+        printNodeDetails(tabSchedule.getContent(), "");
+        return null;
     }
 
 

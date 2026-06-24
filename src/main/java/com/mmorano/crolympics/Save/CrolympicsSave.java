@@ -26,7 +26,9 @@ public class CrolympicsSave implements Serializable {
         try (FileInputStream fileIn = new FileInputStream(filePath.toString());
              ObjectInputStream in = new ObjectInputStream(fileIn)) {
             data = (SaveData) in.readObject();
-        } catch (Exception e){}
+        } catch (Exception e){
+            System.out.println(e.getStackTrace());
+        }
         return data;
     }
 }

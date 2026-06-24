@@ -3,9 +3,15 @@ package com.mmorano.crolympics.Save;
 import java.io.Serializable;
 import java.util.ArrayList;
 
-public class Event implements Serializable {
+public class SportEvent implements Serializable {
     private String name;
     private ArrayList<EventPlace> places = new ArrayList<>();
+
+    public SportEvent(){}
+    public SportEvent(SportEvent sportEvent){
+        this.name = sportEvent.getName();
+        this.places = sportEvent.getPlaces();
+    }
 
     public String getName() {
         return name;
