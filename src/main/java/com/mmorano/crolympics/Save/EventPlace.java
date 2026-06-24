@@ -8,6 +8,7 @@ import java.util.ArrayList;
 public class EventPlace implements Serializable {
     private String placeName;
     private ArrayList<Player> winners = new ArrayList<>();
+    private int points;
 
     public String getPlaceName() {
         return placeName;
@@ -23,5 +24,13 @@ public class EventPlace implements Serializable {
 
     public void setWinners(ArrayList<Player> winners) {
         this.winners = winners;
+    }
+
+    public int getPoints() {
+        return points;
+    }
+
+    public void setPoints(int points) {
+        this.points = points;
     }
 }

@@ -1,6 +1,8 @@
 package com.mmorano.crolympics;
 
 import java.io.Serializable;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 
 public class Player implements Serializable {
     private String name;
@@ -29,5 +31,31 @@ public class Player implements Serializable {
 
     public void setName(String name) {
         this.name = name;
+    }
+
+    @Override
+    public boolean equals(Object obj){
+        if(obj == null || getClass() != obj.getClass()){
+            return false;
+        }
+        Method[] methods = this.getClass().getMethods();
+        for(Method method : methods){
+            if(method.getName().startsWith("get")){
+                try{
+                    Object x = method.invoke(this);
+                    Object y = method.invoke(obj);
+                    if(x == null){
+                        if(y != null){
+                            return false;
+                        }
+                    } else if (!x.equals((y))){
+                        return false;
+                    }
+                } catch (IllegalAccessException | InvocationTargetException e){
+                    e.printStackTrace();
+                }
+            }
+        }
+        return true;
     }
 }
