@@ -30,7 +30,10 @@ import org.controlsfx.control.SearchableComboBox;
 
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardOpenOption;
 import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -314,8 +317,13 @@ public class CrolympicsController{
         addPlayerButton.setFont(new Font(fontSize2));
         addPlayerButton.setOnAction(Event -> {
             players.add(new Player(addPlayerInput.getText()));
+            try {
+                // StandardOpenOption.APPEND ensures it adds to the end without overwriting
+                Files.writeString(getFile("players.txt").toPath(), addPlayerInput.getText(), StandardOpenOption.APPEND, StandardOpenOption.CREATE);
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
             addPlayerInput.setText("");
-            //TODO - edit Players.txt
         });
 
         addPlayerPane.getChildren().add(addPlayerLabel);
