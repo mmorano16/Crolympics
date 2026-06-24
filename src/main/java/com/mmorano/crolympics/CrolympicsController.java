@@ -1,7 +1,7 @@
 package com.mmorano.crolympics;
 
 import com.mmorano.crolympics.Save.CrolympicsSave;
-import com.mmorano.crolympics.Save.Event;
+import com.mmorano.crolympics.Save.SportEvent;
 import com.mmorano.crolympics.Save.EventPlace;
 import com.mmorano.crolympics.Save.SaveData;
 import javafx.animation.Animation;
@@ -75,7 +75,7 @@ public class CrolympicsController{
         });
         tabSchedule.selectedProperty().addListener((observable, oldValue, newValue) -> {
             if (oldValue)
-                save.TrySave(saveData);
+                save.TrySave(getSaveData());
         });
         players.sort(Comparator.comparing(Player::getPoints).thenComparing(Player::getName));
         setLeaderboard();
@@ -138,7 +138,7 @@ public class CrolympicsController{
                 int count = 2;
                 int xCord = 250;
                 int yCord = 5;
-                Event sportEvent = new Event();
+                SportEvent sportEvent = new SportEvent();
                 while(elements.length >= count + 3){
                     String placeName = elements[count];
                     sportEvent.setName(eventName);
@@ -210,6 +210,39 @@ public class CrolympicsController{
                 vboxSchedule.getChildren().add(anchorPane);
             }
         }catch (Exception ignored){}
+    }
+
+    private SearchableComboBox<Player> getPlayerComboBox(int points, EventPlace eventPlace) {
+        SearchableComboBox<Player> comboBox = new SearchableComboBox<>(players);
+        // Define the StringConverter to show the Name field
+        comboBox.setConverter(new StringConverter<>() {
+            @Override
+            public String toString(Player player) {
+                return (player == null) ? "" : player.getName();
+            }
+
+            @Override
+            public Player fromString(String string) {
+                // Not needed unless the ComboBox is editable
+                return null;
+            }
+        });
+        if(points > 0) {
+            // Handle Selection Changes (Retrieves the full object)
+            comboBox.getSelectionModel().selectedItemProperty().addListener((observable, oldValue, newValue) -> {
+                if (newValue != null) {
+                    eventPlace.getWinners().add(newValue);
+                    newValue.setPoints(newValue.getPoints() + points);
+                }
+                if (oldValue != null) {
+                    eventPlace.getWinners().remove(oldValue);
+                    oldValue.setPoints(oldValue.getPoints() - points);
+                }
+            });
+        }
+        comboBox.setStyle("-fx-font-size: " + fontSize2 + "px;");
+
+        return comboBox;
     }
 
     private void setTicker(){
@@ -383,38 +416,50 @@ public class CrolympicsController{
         vboxFunc.getChildren().add(subtractPointsPane);
     }
 
-
-    private SearchableComboBox<Player> getPlayerComboBox(int points, EventPlace eventPlace) {
-        SearchableComboBox<Player> comboBox = new SearchableComboBox<>(players);
-        // Define the StringConverter to show the Name field
-        comboBox.setConverter(new StringConverter<>() {
-            @Override
-            public String toString(Player player) {
-                return (player == null) ? "" : player.getName();
-            }
-
-            @Override
-            public Player fromString(String string) {
-                // Not needed unless the ComboBox is editable
-                return null;
-            }
-        });
-        if(points > 0) {
-            // Handle Selection Changes (Retrieves the full object)
-            comboBox.getSelectionModel().selectedItemProperty().addListener((observable, oldValue, newValue) -> {
-                if (newValue != null) {
-                    eventPlace.getWinners().add(newValue);
-                    newValue.setPoints(newValue.getPoints() + points);
+    private SaveData getSaveData(){
+        SaveData data = new SaveData();
+        AnchorPane aPane = (AnchorPane) tabSchedule.getContent();
+        ObservableList<Node> nodes = aPane.getChildren();
+        ScrollPane sPane = (ScrollPane) nodes.get(0);
+        VBox vbox = (VBox) sPane.getContent();
+        nodes = vbox.getChildren();
+        for(Node node : nodes){
+            aPane = (AnchorPane) node;
+            ObservableList<Node> aNodes = aPane.getChildren();
+            SportEvent event = new SportEvent();
+            EventPlace eventPlace = null;
+            for(int i = 0; i < aNodes.size(); i++){
+                Node aNode = aNodes.get(i);
+                if(i == 0) {
+                    event.setName(((Label)aNode).getText());
+                    data.getEvents().add(event);
+                } else if(aNode.getClass() == Label.class) {
+                    eventPlace = new EventPlace();
+                    eventPlace.setPlaceName(((Label)aNode).getText());
+                    event.getPlaces().add(eventPlace);
+                } else {
+                    while(i < aNodes.size() && aNode.getClass() != Label.class){
+                        if(aNode.getClass() == SearchableComboBox.class){
+                            Player player = (Player)((SearchableComboBox)aNode).getValue();
+                            if(player != null)
+                                eventPlace.getWinners().add(player);
+                        } else if(aNode.getClass() == GridPane.class){
+                            ObservableList<Node> gridNodes = ((GridPane)aNode).getChildren();
+                            for(Node gridNode : gridNodes){
+                                CheckBox ckBox = (CheckBox)gridNode;
+                                if(ckBox.isSelected())
+                                    eventPlace.getWinners().add((Player) ckBox.getUserData());
+                            }
+                        }
+                        i++;
+                        if(i < aNodes.size())
+                            aNode = aNodes.get(i);
+                    }
+                    i--;
                 }
-                if (oldValue != null) {
-                    eventPlace.getWinners().remove(oldValue);
-                    oldValue.setPoints(oldValue.getPoints() - points);
-                }
-            });
+            }
         }
-        comboBox.setStyle("-fx-font-size: " + fontSize2 + "px;");
-
-        return comboBox;
+        return data;
     }
 
     private File getFile(String fileName){

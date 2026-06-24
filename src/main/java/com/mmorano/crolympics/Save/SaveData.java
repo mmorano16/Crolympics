@@ -4,19 +4,19 @@ import java.io.Serializable;
 import java.util.ArrayList;
 
 public class SaveData implements Serializable {
-    private ArrayList<Event> events;
-    public SaveData(ArrayList<Event> events){
-        this.events = events;
+    private ArrayList<SportEvent> sportEvents;
+    public SaveData(ArrayList<SportEvent> sportEvents){
+        this.sportEvents = sportEvents;
     }
     public SaveData(){
-        this.events = new ArrayList<>();
+        this.sportEvents = new ArrayList<>();
     }
 
-    public ArrayList<Event> getEvents() {
-        return events;
+    public ArrayList<SportEvent> getEvents() {
+        return sportEvents;
     }
 
-    public void setEvents(ArrayList<Event> events) {
-        this.events = events;
+    public void setEvents(ArrayList<SportEvent> sportEvents) {
+        this.sportEvents = sportEvents;
     }
 }
