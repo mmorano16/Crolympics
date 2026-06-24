@@ -68,7 +68,9 @@ public class CrolympicsController{
         try{
             sc = new Scanner(getFile("players.txt"));
             while(sc.hasNextLine()){
-                players.add(new Player(sc.nextLine()));
+                String playerName = sc.nextLine();
+                if(!playerName.equals(""))
+                    players.add(new Player(playerName));
             }
         }catch (Exception ignored){}
         tabScoreboard.selectedProperty().addListener((observable, oldValue, newValue) -> {
@@ -83,7 +85,7 @@ public class CrolympicsController{
             if (oldValue)
                 save.TrySave(getSaveData());
         });
-        players.sort(Comparator.comparing(Player::getPoints).thenComparing(Player::getName));
+        players.sort(Comparator.comparing(Player::getName));
         setEvents();
         addBonusPoints();
         setLeaderboard();
@@ -120,6 +122,7 @@ public class CrolympicsController{
                 .collect(Collectors.toMap(SportEvent::getName, Function.identity()));
         try{
             sc = new Scanner(getFile("events.txt"));
+            vboxSchedule.getChildren().clear();
             vboxSchedule.setSpacing(10);
             while(sc.hasNextLine()){
                 String[] elements = sc.nextLine().split(";");
@@ -317,9 +320,11 @@ public class CrolympicsController{
         addPlayerButton.setFont(new Font(fontSize2));
         addPlayerButton.setOnAction(Event -> {
             players.add(new Player(addPlayerInput.getText()));
+            players.sort(Comparator.comparing(Player::getName));
+            setEvents();
             try {
                 // StandardOpenOption.APPEND ensures it adds to the end without overwriting
-                Files.writeString(getFile("players.txt").toPath(), addPlayerInput.getText(), StandardOpenOption.APPEND, StandardOpenOption.CREATE);
+                Files.writeString(getFile("players.txt").toPath(), "\n" + addPlayerInput.getText(), StandardOpenOption.APPEND, StandardOpenOption.CREATE);
             } catch (IOException e) {
                 e.printStackTrace();
             }
