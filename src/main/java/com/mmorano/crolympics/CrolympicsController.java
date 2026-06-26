@@ -44,7 +44,7 @@ public class CrolympicsController{
     @FXML private ImageView imgGold, imgSilver, imgBronze, imgEvent;
     @FXML private Label lblPlace4, lblPlace5, lblPlace6, lblPlace7, lblPlace8, lblPlace9, lblPlace10, lblPlace11, lblPlace12, lblPlace13, lblPlace14, lblPlace15;
     @FXML private VBox vboxSchedule, vboxFunc;
-    @FXML private Tab tabScoreboard, tabSchedule, tabCurrentEvent;
+    @FXML private Tab tabScoreboard, tabSchedule, tabCurrentEvent, tabFunctions;
     @FXML private TabPane tabPane;
     @FXML private BorderPane borderPane;
     private Scanner sc;
@@ -62,8 +62,6 @@ public class CrolympicsController{
         scoreLabels = FXCollections.observableArrayList(List.of(lblScore1, lblScore2, lblScore3, lblScore4, lblScore5, lblScore6, lblScore7, lblScore8, lblScore9, lblScore10, lblScore11, lblScore12, lblScore13, lblScore14, lblScore15));
         placeImages = FXCollections.observableArrayList(List.of(imgGold, imgSilver, imgBronze));
         placeLabels = FXCollections.observableArrayList(List.of(lblPlace4, lblPlace5, lblPlace6, lblPlace7, lblPlace8, lblPlace9, lblPlace10, lblPlace11, lblPlace12, lblPlace13, lblPlace14, lblPlace15));
-
-        saveData = save.TryLoad();
 
         try{
             sc = new Scanner(getFile("players.txt"));
@@ -84,6 +82,10 @@ public class CrolympicsController{
         tabSchedule.selectedProperty().addListener((observable, oldValue, newValue) -> {
             if (oldValue)
                 save.TrySave(getSaveData());
+        });
+        tabFunctions.selectedProperty().addListener((observable, oldValue, newValue) -> {
+            if (oldValue)
+                save.TrySave(saveData);
         });
         players.sort(Comparator.comparing(Player::getName));
         setEvents();
@@ -118,8 +120,10 @@ public class CrolympicsController{
     }
 
     private void setEvents(){
+        saveData = save.TryLoad();
         HashMap<String, SportEvent> existingEventsMap = (HashMap<String, SportEvent>) saveData.getEvents().stream()
                 .collect(Collectors.toMap(SportEvent::getName, Function.identity()));
+        clearPlayerScores();
         try{
             sc = new Scanner(getFile("events.txt"));
             vboxSchedule.getChildren().clear();
@@ -181,13 +185,10 @@ public class CrolympicsController{
                                 ckBox.setOnAction(event -> {
                                     CheckBox source = (CheckBox) event.getSource();
                                     Player associatedPlayer = (Player) source.getUserData();
-                                    if (source.isSelected()) {
+                                    if (source.isSelected())
                                         associatedPlayer.setPoints(associatedPlayer.getPoints() + points);
-                                        System.out.println(associatedPlayer.getName() + " " + associatedPlayer.getPoints());
-                                    } else {
+                                    else
                                         associatedPlayer.setPoints(associatedPlayer.getPoints() - points);
-                                        System.out.println(associatedPlayer.getName() + " " + associatedPlayer.getPoints());
-                                    }
                                 });
                                 if(existingEvent != null && existingEvent.getPlaces().size() > 0){
                                     Player existingPlayer = existingEvent.getPlaces().get(0).getWinners().stream().filter(x -> x.getName().equals(player.getName())).findFirst().orElse(null);
@@ -260,6 +261,11 @@ public class CrolympicsController{
         comboBox.setStyle("-fx-font-size: " + fontSize2 + "px;");
 
         return comboBox;
+    }
+
+    private void clearPlayerScores(){
+        for(Player p : players)
+            p.setPoints(0);
     }
 
     private void setTicker(){
