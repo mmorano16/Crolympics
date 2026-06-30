@@ -18,6 +18,7 @@ import javafx.scene.control.*;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.scene.input.MouseButton;
+import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.*;
 import javafx.scene.paint.Color;
 import javafx.scene.shape.Rectangle;
@@ -257,7 +258,17 @@ public class CrolympicsController{
                     oldValue.setPoints(oldValue.getPoints() - points);
                 }
             });
+
+            comboBox.addEventFilter(MouseEvent.MOUSE_CLICKED, event -> {
+                if (event.getButton() == MouseButton.PRIMARY && event.getClickCount() == 2) {
+                    Player player = comboBox.getSelectionModel().getSelectedItem();
+                    comboBox.getSelectionModel().clearSelection();
+                    comboBox.setValue(null);
+                    event.consume();
+                }
+            });
         }
+
         comboBox.setStyle("-fx-font-size: " + fontSize2 + "px;");
 
         return comboBox;
